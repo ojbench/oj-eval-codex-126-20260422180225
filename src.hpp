@@ -130,18 +130,40 @@ void Tick() {
 // Print the grid in compressed RLE-like format per spec
 void PrintGame() {
     cout << g_cols << ' ' << g_rows << '\n';
-    // produce a single-line pattern string
-    // For each row, emit runs of b/o and a trailing '$'. Use counts when >1.
+    // Single-line pattern. Compress by omitting trailing dead cells in each row
+    // and compressing consecutive empty rows using count+'$'.
+    int empty_rows = 0;
     for (int r = 0; r < g_rows; ++r) {
+        // Find last alive cell in this row
+        int last_alive = -1;
+        for (int c = g_cols - 1; c >= 0; --c) {
+            if (g_grid[idx(r, c)]) { last_alive = c; break; }
+        }
+        if (last_alive < 0) {
+            // Entire row is empty; accumulate
+            ++empty_rows;
+            continue;
+        }
+        // Flush pending empty rows
+        if (empty_rows > 0) {
+            if (empty_rows > 1) cout << empty_rows;
+            cout << '$';
+            empty_rows = 0;
+        }
         int c = 0;
-        while (c < g_cols) {
+        while (c <= last_alive) {
             unsigned char val = g_grid[idx(r, c)];
             int start = c;
-            while (c < g_cols && g_grid[idx(r, c)] == val) ++c;
+            while (c <= last_alive && g_grid[idx(r, c)] == val) ++c;
             int run = c - start;
             if (run > 1) cout << run;
             cout << (val ? 'o' : 'b');
         }
+        cout << '$';
+    }
+    // Add trailing empty rows (if any)
+    if (empty_rows > 0) {
+        if (empty_rows > 1) cout << empty_rows;
         cout << '$';
     }
     cout << '!';
@@ -150,4 +172,3 @@ void PrintGame() {
 int GetLiveCell() {
     return (int)g_live;
 }
-
